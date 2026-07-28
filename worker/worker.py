@@ -1,4 +1,5 @@
 import sys
+import asyncio
 from aiohttp import web
 
 
@@ -14,6 +15,9 @@ async def health(request):
 # Funkcija koja obrađuje primljene podatke
 async def analyze(request):
     data = await request.json()
+
+    # Simulacija zahtjevne obrade
+    await asyncio.sleep(2)
 
     vehicles = data["vehicles"]
 
@@ -57,4 +61,4 @@ if __name__ == "__main__":
 
     print(f"Pokrećem Worker na portu {port}")
 
-    web.run_app(app, host="127.0.0.1", port=port)
+    web.run_app(app, host="0.0.0.0", port=port)

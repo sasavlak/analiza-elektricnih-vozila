@@ -1,0 +1,25 @@
+services:
+
+  worker1:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    command: python worker.py 8081
+    ports:
+      - "8081:8081"
+
+  worker2:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    command: python worker.py 8082
+    ports:
+      - "8082:8082"
+
+  master:
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    depends_on:
+      - worker1
+      - worker2

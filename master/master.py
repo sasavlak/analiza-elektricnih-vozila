@@ -7,8 +7,8 @@ from aiohttp import ClientSession
 
 # Adrese Worker servisa
 worker_urls = [
-    "http://127.0.0.1:8081/analyze",
-    "http://127.0.0.1:8082/analyze"
+    "http://worker1:8081/analyze",
+    "http://worker2:8082/analyze"
 ]
 
 
