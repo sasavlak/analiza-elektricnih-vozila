@@ -1,4 +1,6 @@
 import asyncio
+import time
+
 import pandas as pd
 from aiohttp import ClientSession
 
@@ -43,6 +45,9 @@ async def send_to_worker(session, worker_url, vehicles):
 
 async def main():
 
+    # Početak mjerenja vremena izvršavanja
+    start_time = time.perf_counter()
+
     # Podjela podataka na dva približno jednaka dijela
     data_chunks = [
         data.iloc[::2],
@@ -76,7 +81,7 @@ async def main():
             print(f"Rezultat Workera {index + 1}:")
             print(result)
 
-            # Spajanje parcijalnih rezultata svih Workera
+    # Spajanje parcijalnih rezultata svih Workera
     total_vehicle_count = 0
     total_range_sum = 0
     overall_maximum_range = 0
@@ -98,5 +103,15 @@ async def main():
     print("Prosječni električni domet:", average_range)
     print("Najveći električni domet:", overall_maximum_range)
 
+    # Kraj mjerenja vremena izvršavanja
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
 
-asyncio.run(main()) 
+    print(
+        "Vrijeme izvršavanja:",
+        round(execution_time, 4),
+        "sekundi"
+    )
+
+
+asyncio.run(main())
