@@ -76,5 +76,27 @@ async def main():
             print(f"Rezultat Workera {index + 1}:")
             print(result)
 
+            # Spajanje parcijalnih rezultata svih Workera
+    total_vehicle_count = 0
+    total_range_sum = 0
+    overall_maximum_range = 0
+
+    for result in results:
+        total_vehicle_count += result["vehicle_count"]
+        total_range_sum += result["range_sum"]
+
+        if result["maximum_range"] > overall_maximum_range:
+            overall_maximum_range = result["maximum_range"]
+
+    # Izračun prosječnog električnog dometa
+    average_range = total_range_sum / total_vehicle_count
+
+    print()
+    print("Završni rezultat:")
+    print("Ukupan broj vozila:", total_vehicle_count)
+    print("Ukupan zbroj električnog dometa:", total_range_sum)
+    print("Prosječni električni domet:", average_range)
+    print("Najveći električni domet:", overall_maximum_range)
+
 
 asyncio.run(main()) 
