@@ -13,7 +13,15 @@ worker_urls = [
 
 
 # Učitavanje CSV datoteke
-data = pd.read_csv("podaci/elektricna_vozila.csv")
+data = pd.read_csv("podaci/Electric_Vehicle_Population_Data.csv")
+
+# Uklanjanje redaka bez električnog dometa
+data = data.dropna(
+    subset=["Make", "Electric Range"]
+)
+
+# Zadržavanje samo vozila s dometom većim od 0
+data = data[data["Electric Range"] > 0]
 
 
 # Funkcija pretvara jedan dio DataFramea u listu rječnika
@@ -23,8 +31,10 @@ def prepare_vehicles(data_chunk):
     for _, row in data_chunk.iterrows():
         vehicles.append(
             {
-                "manufacturer": row["manufacturer"],
-                "electric_range": int(row["electric_range"])
+                "manufacturer": str(row["Make"]),
+                "electric_range": int(
+                    row["Electric Range"]
+                )
             }
         )
 
@@ -85,6 +95,10 @@ async def main():
     total_vehicle_count = 0
     total_range_sum = 0
     overall_maximum_range = 0
+    overall_minimum_range = None
+
+    total_manufacturer_counts = {}
+    total_manufacturer_range_sums = {}
 
     for result in results:
         total_vehicle_count += result["vehicle_count"]
@@ -93,8 +107,36 @@ async def main():
         if result["maximum_range"] > overall_maximum_range:
             overall_maximum_range = result["maximum_range"]
 
-    # Izračun prosječnog električnog dometa
+        if (
+            overall_minimum_range is None
+            or result["minimum_range"] < overall_minimum_range
+        ):
+            overall_minimum_range = result["minimum_range"]
+
+        # Spajanje broja vozila i zbroja dometa po proizvođaču
+        for manufacturer, count in result["manufacturer_counts"].items():
+
+            if manufacturer not in total_manufacturer_counts:
+                total_manufacturer_counts[manufacturer] = 0
+                total_manufacturer_range_sums[manufacturer] = 0
+
+            total_manufacturer_counts[manufacturer] += count
+
+            total_manufacturer_range_sums[manufacturer] += (
+                result["manufacturer_range_sums"][manufacturer]
+            )
+
+    # Izračun ukupnog prosječnog električnog dometa
     average_range = total_range_sum / total_vehicle_count
+
+    # Izračun prosječnog dometa po proizvođaču
+    manufacturer_averages = {}
+
+    for manufacturer in total_manufacturer_counts:
+        manufacturer_averages[manufacturer] = (
+            total_manufacturer_range_sums[manufacturer]
+            / total_manufacturer_counts[manufacturer]
+        )
 
     print()
     print("Završni rezultat:")
@@ -102,11 +144,25 @@ async def main():
     print("Ukupan zbroj električnog dometa:", total_range_sum)
     print("Prosječni električni domet:", average_range)
     print("Najveći električni domet:", overall_maximum_range)
+    print("Najmanji električni domet:", overall_minimum_range)
+
+    print()
+    print("Statistika po proizvođačima:")
+
+    for manufacturer in total_manufacturer_counts:
+        print(
+            manufacturer,
+            "- broj vozila:",
+            total_manufacturer_counts[manufacturer],
+            "- prosječni domet:",
+            round(manufacturer_averages[manufacturer], 2)
+        )
 
     # Kraj mjerenja vremena izvršavanja
     end_time = time.perf_counter()
     execution_time = end_time - start_time
 
+    print()
     print(
         "Vrijeme izvršavanja:",
         round(execution_time, 4),
@@ -119,6 +175,9 @@ async def main():
         "ukupan_zbroj_elektricnog_dometa": total_range_sum,
         "prosjecni_elektricni_domet": average_range,
         "najveci_elektricni_domet": overall_maximum_range,
+        "najmanji_elektricni_domet": overall_minimum_range,
+        "broj_vozila_po_proizvodacu": total_manufacturer_counts,
+        "prosjecni_domet_po_proizvodacu": manufacturer_averages,
         "vrijeme_izvrsavanja": round(execution_time, 4)
     }
 

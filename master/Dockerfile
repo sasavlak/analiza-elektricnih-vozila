@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY master/master.py .
-COPY podaci/elektricna_vozila.csv podaci/elektricna_vozila.csv
+COPY podaci/Electric_Vehicle_Population_Data.csv podaci/Electric_Vehicle_Population_Data.csv
 
 RUN mkdir -p rezultati
 
