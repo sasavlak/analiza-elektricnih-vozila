@@ -8,7 +8,9 @@ from aiohttp import ClientSession
 # Adrese Worker servisa
 worker_urls = [
     "http://worker1:8081/analyze",
-    "http://worker2:8082/analyze"
+    "http://worker2:8082/analyze",
+    "http://worker3:8083/analyze",
+    "http://worker4:8084/analyze"
 ]
 
 
@@ -58,18 +60,33 @@ async def main():
     # Početak mjerenja vremena izvršavanja
     start_time = time.perf_counter()
 
-    # Podjela podataka na dva približno jednaka dijela
-    data_chunks = [
-        data.iloc[::2],
-        data.iloc[1::2]
-    ]
+    # Broj Workera određuje se prema broju adresa
+    worker_count = len(worker_urls)
+
+    # Dinamička podjela podataka prema broju Workera
+    data_chunks = []
+
+    for index in range(worker_count):
+        data_chunk = data.iloc[index::worker_count]
+        data_chunks.append(data_chunk)
+
+    # Ispis raspodjele podataka
+    print()
+    print("Broj Workera:", worker_count)
+    print("Ukupan broj vozila:", len(data))
+
+    for index, data_chunk in enumerate(data_chunks):
+        print(
+            f"Worker {index + 1} dobiva "
+            f"{len(data_chunk)} vozila."
+        )
 
     async with ClientSession() as session:
 
-        # Lista zadataka za oba Workera
+        # Lista zadataka za sve Workere
         tasks = []
 
-        for index in range(len(worker_urls)):
+        for index in range(worker_count):
 
             vehicles = prepare_vehicles(data_chunks[index])
 
@@ -171,6 +188,7 @@ async def main():
 
     # Priprema završnog rezultata za spremanje
     final_result = {
+        "broj_workera": worker_count,
         "ukupan_broj_vozila": total_vehicle_count,
         "ukupan_zbroj_elektricnog_dometa": total_range_sum,
         "prosjecni_elektricni_domet": average_range,
@@ -200,6 +218,5 @@ async def main():
         "Rezultat je spremljen u datoteku "
         "rezultati/rezultat.json"
     )
-
 
 asyncio.run(main())

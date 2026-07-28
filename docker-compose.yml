@@ -16,6 +16,22 @@ services:
     ports:
       - "8082:8082"
 
+  worker3:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    command: python worker.py 8083
+    ports:
+      - "8083:8083"
+
+  worker4:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    command: python worker.py 8084
+    ports:
+      - "8084:8084"
+
   master:
     build:
       context: .
@@ -23,5 +39,8 @@ services:
     depends_on:
       - worker1
       - worker2
+      - worker3
+      - worker4
+
     volumes:
       - ./rezultati:/app/rezultati
