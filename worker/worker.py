@@ -3,7 +3,12 @@ from aiohttp import web
 
 # Funkcija koja provjerava radi li Worker
 async def health(request):
-    return web.Response(text="Worker radi!")
+    return web.json_response(
+        {
+            "status": "radi",
+            "servis": "worker"
+        }
+    )
 
 
 # Kreiranje aplikacije
