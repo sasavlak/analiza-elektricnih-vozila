@@ -2,5 +2,4 @@ venv/
 __pycache__/
 *.pyc
 .vscode/
-podaci/*.csv
 rezultati/*.json
