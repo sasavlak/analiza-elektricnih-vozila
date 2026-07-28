@@ -1,21 +1,38 @@
+import asyncio
 import pandas as pd
+from aiohttp import ClientSession
 
 
-# Putanja do CSV datoteke
-file_path = "podaci/elektricna_vozila.csv"
+# Učitavanje CSV datoteke
+data = pd.read_csv("podaci/elektricna_vozila.csv")
 
 
-# Učitavanje podataka iz CSV datoteke
-data = pd.read_csv(file_path)
+async def send_to_worker():
+
+    vehicles = []
+
+    # Pretvaranje DataFramea u listu rječnika
+    for _, row in data.iterrows():
+
+        vehicles.append(
+            {
+                "manufacturer": row["manufacturer"],
+                "electric_range": int(row["electric_range"])
+            }
+        )
+
+    async with ClientSession() as session:
+
+        async with session.post(
+            "http://127.0.0.1:8081/analyze",
+            json={"vehicles": vehicles}
+        ) as response:
+
+            result = await response.json()
+
+            print()
+            print("Rezultat koji je vratio Worker:")
+            print(result)
 
 
-# Ispis svih učitanih podataka
-print("Učitani podaci:")
-print(data)
-
-
-# Ispis broja vozila
-vehicle_count = len(data)
-
-print()
-print("Ukupan broj vozila:", vehicle_count)
+asyncio.run(send_to_worker())
