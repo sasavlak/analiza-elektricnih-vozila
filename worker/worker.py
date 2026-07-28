@@ -1,3 +1,4 @@
+import sys
 from aiohttp import web
 
 
@@ -46,4 +47,14 @@ app.router.add_post("/analyze", analyze)
 
 # Pokretanje servera
 if __name__ == "__main__":
-    web.run_app(app, host="127.0.0.1", port=8081)
+
+    # Zadani port
+    port = 8081
+
+    # Ako je korisnik upisao broj porta prilikom pokretanja
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+
+    print(f"Pokrećem Worker na portu {port}")
+
+    web.run_app(app, host="127.0.0.1", port=port)
