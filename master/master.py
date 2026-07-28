@@ -51,19 +51,26 @@ async def main():
 
     async with ClientSession() as session:
 
-        results = []
+        # Lista zadataka za oba Workera
+        tasks = []
 
         for index in range(len(worker_urls)):
 
             vehicles = prepare_vehicles(data_chunks[index])
 
-            result = await send_to_worker(
+            task = send_to_worker(
                 session,
                 worker_urls[index],
                 vehicles
             )
 
-            results.append(result)
+            tasks.append(task)
+
+        # Paralelno slanje zahtjeva i čekanje svih odgovora
+        results = await asyncio.gather(*tasks)
+
+        # Ispis parcijalnih rezultata
+        for index, result in enumerate(results):
 
             print()
             print(f"Rezultat Workera {index + 1}:")
