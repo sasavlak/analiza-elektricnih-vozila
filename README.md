@@ -1,1 +1,1 @@
-# Sustav_za_Upravljanje_Sredstvima
+Distribuirana analiza podataka o električnim vozilima pomoću Master/Worker arhitekture preko HTTP-a.
