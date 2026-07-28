@@ -1,6 +1,6 @@
 import asyncio
 import time
-
+import json
 import pandas as pd
 from aiohttp import ClientSession
 
@@ -111,6 +111,35 @@ async def main():
         "Vrijeme izvršavanja:",
         round(execution_time, 4),
         "sekundi"
+    )
+
+    # Priprema završnog rezultata za spremanje
+    final_result = {
+        "ukupan_broj_vozila": total_vehicle_count,
+        "ukupan_zbroj_elektricnog_dometa": total_range_sum,
+        "prosjecni_elektricni_domet": average_range,
+        "najveci_elektricni_domet": overall_maximum_range,
+        "vrijeme_izvrsavanja": round(execution_time, 4)
+    }
+
+    # Spremanje završnog rezultata u JSON datoteku
+    with open(
+        "rezultati/rezultat.json",
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            final_result,
+            file,
+            ensure_ascii=False,
+            indent=4
+        )
+
+    print()
+    print(
+        "Rezultat je spremljen u datoteku "
+        "rezultati/rezultat.json"
     )
 
 
