@@ -14,63 +14,52 @@ worker_urls = [
 ]
 
 
-# Učitavanje CSV datoteke
+# Učitavanje i čišćenje podataka
 data = pd.read_csv("podaci/Electric_Vehicle_Population_Data.csv")
-
-# Uklanjanje redaka bez električnog dometa
-data = data.dropna(
-    subset=["Make", "Electric Range"]
-)
-
-# Zadržavanje samo vozila s dometom većim od 0
+data = data.dropna(subset=["Make", "Electric Range"])
 data = data[data["Electric Range"] > 0]
 
+if data.empty:
+    raise ValueError("Nakon filtriranja nema podataka za obradu.")
 
-# Funkcija pretvara jedan dio DataFramea u listu rječnika
+
+# Pretvaranje dijela tablice u listu vozila
 def prepare_vehicles(data_chunk):
     vehicles = []
 
     for _, row in data_chunk.iterrows():
-        vehicles.append(
-            {
-                "manufacturer": str(row["Make"]),
-                "electric_range": int(
-                    row["Electric Range"]
-                )
-            }
-        )
+        vehicle = {
+            "manufacturer": str(row["Make"]),
+            "electric_range": int(row["Electric Range"])
+        }
+
+        vehicles.append(vehicle)
 
     return vehicles
 
 
-# Funkcija šalje jedan dio podataka jednom Workeru
+# Slanje podataka jednom Workeru preko HTTP-a
 async def send_to_worker(session, worker_url, vehicles):
     async with session.post(
         worker_url,
         json={"vehicles": vehicles}
     ) as response:
 
-        result = await response.json()
-
-        return result
+        response.raise_for_status()
+        return await response.json()
 
 
 async def main():
-
-    # Početak mjerenja vremena izvršavanja
     start_time = time.perf_counter()
 
-    # Broj Workera određuje se prema broju adresa
     worker_count = len(worker_urls)
-
-    # Dinamička podjela podataka prema broju Workera
     data_chunks = []
 
+    # Podjela podataka između Workera
     for index in range(worker_count):
         data_chunk = data.iloc[index::worker_count]
         data_chunks.append(data_chunk)
 
-    # Ispis raspodjele podataka
     print()
     print("Broj Workera:", worker_count)
     print("Ukupan broj vozila:", len(data))
@@ -81,13 +70,11 @@ async def main():
             f"{len(data_chunk)} vozila."
         )
 
+    # Paralelno slanje podataka Workerima
     async with ClientSession() as session:
-
-        # Lista zadataka za sve Workere
         tasks = []
 
         for index in range(worker_count):
-
             vehicles = prepare_vehicles(data_chunks[index])
 
             task = send_to_worker(
@@ -98,86 +85,77 @@ async def main():
 
             tasks.append(task)
 
-        # Paralelno slanje zahtjeva i čekanje svih odgovora
         results = await asyncio.gather(*tasks)
 
-        # Ispis parcijalnih rezultata
-        for index, result in enumerate(results):
+    print()
 
-            print()
-            print(f"Rezultat Workera {index + 1}:")
-            print(result)
+    for index, result in enumerate(results):
+        print(
+            f"Worker {index + 1} obradio je "
+            f"{result['vehicle_count']} vozila."
+        )
 
-    # Spajanje parcijalnih rezultata svih Workera
+    # Početne vrijednosti za spajanje rezultata
     total_vehicle_count = 0
     total_range_sum = 0
-    overall_maximum_range = 0
-    overall_minimum_range = None
+    maximum_range = 0
+    minimum_range = None
+    manufacturer_counts = {}
 
-    total_manufacturer_counts = {}
-    total_manufacturer_range_sums = {}
-
+    # Spajanje rezultata svih Workera
     for result in results:
         total_vehicle_count += result["vehicle_count"]
         total_range_sum += result["range_sum"]
 
-        if result["maximum_range"] > overall_maximum_range:
-            overall_maximum_range = result["maximum_range"]
+        if result["maximum_range"] > maximum_range:
+            maximum_range = result["maximum_range"]
 
         if (
-            overall_minimum_range is None
-            or result["minimum_range"] < overall_minimum_range
+            minimum_range is None
+            or result["minimum_range"] < minimum_range
         ):
-            overall_minimum_range = result["minimum_range"]
+            minimum_range = result["minimum_range"]
 
-        # Spajanje broja vozila i zbroja dometa po proizvođaču
         for manufacturer, count in result["manufacturer_counts"].items():
+            if manufacturer not in manufacturer_counts:
+                manufacturer_counts[manufacturer] = 0
 
-            if manufacturer not in total_manufacturer_counts:
-                total_manufacturer_counts[manufacturer] = 0
-                total_manufacturer_range_sums[manufacturer] = 0
+            manufacturer_counts[manufacturer] += count
 
-            total_manufacturer_counts[manufacturer] += count
-
-            total_manufacturer_range_sums[manufacturer] += (
-                result["manufacturer_range_sums"][manufacturer]
-            )
-
-    # Izračun ukupnog prosječnog električnog dometa
+    # Izračun statistike
     average_range = total_range_sum / total_vehicle_count
 
-    # Izračun prosječnog dometa po proizvođaču
-    manufacturer_averages = {}
+    top_10_manufacturers = sorted(
+        manufacturer_counts.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )[:10]
 
-    for manufacturer in total_manufacturer_counts:
-        manufacturer_averages[manufacturer] = (
-            total_manufacturer_range_sums[manufacturer]
-            / total_manufacturer_counts[manufacturer]
-        )
+    execution_time = time.perf_counter() - start_time
 
+    # Ispis rezultata
     print()
-    print("Završni rezultat:")
+    print("ZAVRŠNI REZULTAT")
+    print("----------------")
     print("Ukupan broj vozila:", total_vehicle_count)
-    print("Ukupan zbroj električnog dometa:", total_range_sum)
-    print("Prosječni električni domet:", average_range)
-    print("Najveći električni domet:", overall_maximum_range)
-    print("Najmanji električni domet:", overall_minimum_range)
+    print("Prosječni električni domet:", round(average_range, 2))
+    print("Najveći električni domet:", maximum_range)
+    print("Najmanji električni domet:", minimum_range)
 
     print()
-    print("Statistika po proizvođačima:")
+    print("TOP 10 PROIZVOĐAČA")
 
-    for manufacturer in total_manufacturer_counts:
+    for position, manufacturer_data in enumerate(
+        top_10_manufacturers,
+        start=1
+    ):
+        manufacturer = manufacturer_data[0]
+        count = manufacturer_data[1]
+
         print(
-            manufacturer,
-            "- broj vozila:",
-            total_manufacturer_counts[manufacturer],
-            "- prosječni domet:",
-            round(manufacturer_averages[manufacturer], 2)
+            f"{position}. {manufacturer} "
+            f"- {count} vozila"
         )
-
-    # Kraj mjerenja vremena izvršavanja
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
 
     print()
     print(
@@ -186,26 +164,32 @@ async def main():
         "sekundi"
     )
 
-    # Priprema završnog rezultata za spremanje
+    # Priprema Top 10 liste za JSON
+    top_10_json = []
+
+    for manufacturer, count in top_10_manufacturers:
+        top_10_json.append({
+            "proizvodac": manufacturer,
+            "broj_vozila": count
+        })
+
+    # Završni rezultat
     final_result = {
         "broj_workera": worker_count,
         "ukupan_broj_vozila": total_vehicle_count,
-        "ukupan_zbroj_elektricnog_dometa": total_range_sum,
-        "prosjecni_elektricni_domet": average_range,
-        "najveci_elektricni_domet": overall_maximum_range,
-        "najmanji_elektricni_domet": overall_minimum_range,
-        "broj_vozila_po_proizvodacu": total_manufacturer_counts,
-        "prosjecni_domet_po_proizvodacu": manufacturer_averages,
+        "prosjecni_domet": round(average_range, 2),
+        "najveci_domet": maximum_range,
+        "najmanji_domet": minimum_range,
+        "top_10_proizvodaca": top_10_json,
         "vrijeme_izvrsavanja": round(execution_time, 4)
     }
 
-    # Spremanje završnog rezultata u JSON datoteku
+    # Spremanje rezultata u JSON datoteku
     with open(
         "rezultati/rezultat.json",
         "w",
         encoding="utf-8"
     ) as file:
-
         json.dump(
             final_result,
             file,
@@ -215,8 +199,10 @@ async def main():
 
     print()
     print(
-        "Rezultat je spremljen u datoteku "
+        "Rezultat je spremljen u "
         "rezultati/rezultat.json"
     )
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(main())
