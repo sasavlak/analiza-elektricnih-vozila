@@ -38,7 +38,7 @@ def prepare_vehicles(data_chunk):
     return vehicles
 
 
-# Slanje podataka jednom Workeru preko HTTP-a
+# Slanje podataka workeru preko HTTP
 async def send_to_worker(session, worker_url, vehicles):
     async with session.post(
         worker_url,
@@ -55,7 +55,7 @@ async def main():
     worker_count = len(worker_urls)
     data_chunks = []
 
-    # Podjela podataka između Workera
+    # Podjela podataka između workera
     for index in range(worker_count):
         data_chunk = data.iloc[index::worker_count]
         data_chunks.append(data_chunk)
@@ -70,7 +70,7 @@ async def main():
             f"{len(data_chunk)} vozila."
         )
 
-    # Paralelno slanje podataka Workerima
+    # Paralelno slanje podataka workerima
     async with ClientSession() as session:
         tasks = []
 
@@ -102,7 +102,7 @@ async def main():
     minimum_range = None
     manufacturer_counts = {}
 
-    # Spajanje rezultata svih Workera
+    # Spajanje rezultata svih workera
     for result in results:
         total_vehicle_count += result["vehicle_count"]
         total_range_sum += result["range_sum"]
@@ -164,7 +164,7 @@ async def main():
         "sekundi"
     )
 
-    # Priprema Top 10 liste za JSON
+    # Priprema liste za json
     top_10_json = []
 
     for manufacturer, count in top_10_manufacturers:
@@ -173,7 +173,7 @@ async def main():
             "broj_vozila": count
         })
 
-    # Završni rezultat
+    # Završni rezultati
     final_result = {
         "broj_workera": worker_count,
         "ukupan_broj_vozila": total_vehicle_count,
@@ -184,7 +184,7 @@ async def main():
         "vrijeme_izvrsavanja": round(execution_time, 4)
     }
 
-    # Spremanje rezultata u JSON datoteku
+    # Spremanje rezultata u json
     with open(
         "rezultati/rezultat.json",
         "w",
