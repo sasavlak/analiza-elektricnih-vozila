@@ -3,7 +3,7 @@ import asyncio
 from aiohttp import web
 
 
-# Provjera radi li Worker servis
+# Provjera radi li worker servis
 async def health(request):
     return web.json_response({
         "status": "radi",
@@ -11,11 +11,11 @@ async def health(request):
     })
 
 
-# Obrada podataka koje je poslao Master
+# Obrada podataka koje je poslao master
 async def analyze(request):
     data = await request.json()
 
-    # Simulacija zahtjevnije obrade
+    # Simulacija obrade 2 skunde
     await asyncio.sleep(2)
 
     vehicles = data["vehicles"]
@@ -51,9 +51,7 @@ async def analyze(request):
         "manufacturer_counts": manufacturer_counts
     })
 
-
-# Kreiranje aplikacije
-# Dopuštena veličina HTTP zahtjeva povećana je na 100 MB
+# Dopuštena veličina http zahtjeva povećana je na 100 MB, zbog greške
 app = web.Application(
     client_max_size=100 * 1024 * 1024
 )
@@ -64,16 +62,16 @@ app.router.add_get("/health", health)
 app.router.add_post("/analyze", analyze)
 
 
-# Pokretanje Worker servisa
+# Pokretanje worker servisa
 if __name__ == "__main__":
 
     port = 8081
 
-    # Port se može zadati kao argument pri pokretanju
+    # Provjerava je li prilikom pokretanja upisan broj porta
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
 
-    print(f"Pokrećem Worker na portu {port}")
+    print(f"Pokrećem worker na portu {port}")
 
     web.run_app(
         app,
