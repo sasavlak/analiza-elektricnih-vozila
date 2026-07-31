@@ -10,7 +10,6 @@ worker_urls = [
     "http://worker1:8081/analyze",
     "http://worker2:8082/analyze",
     "http://worker3:8083/analyze",
-    "http://worker4:8084/analyze"
 ]
 
 
@@ -199,8 +198,7 @@ async def main():
 
     print()
     print(
-        "Rezultat je spremljen u "
-        "rezultati/rezultat.json"
+        "Rezultat je spremljen u rezultat.json"
     )
 
 

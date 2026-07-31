@@ -24,14 +24,6 @@ services:
     ports:
       - "8083:8083"
 
-  worker4:
-    build:
-      context: .
-      dockerfile: worker/Dockerfile
-    command: python worker.py 8084
-    ports:
-      - "8084:8084"
-
   master:
     build:
       context: .
@@ -40,7 +32,6 @@ services:
       - worker1
       - worker2
       - worker3
-      - worker4
 
     volumes:
       - ./rezultati:/app/rezultati
