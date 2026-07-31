@@ -20,7 +20,7 @@ Korištene tehnologije
 - Docker Compose
 
 Struktura projekta
-
+---
 ANALIZA-ELEKTRICNIH-VOZILA
 │
 ├── master/
@@ -40,7 +40,7 @@ ANALIZA-ELEKTRICNIH-VOZILA
 ├── requirements.txt
 ├── README.md
 └── .gitignore
-
+---
 1. Master učitava CSV datoteku.
 2. Podaci se očiste od neispravnih zapisa.
 3. Podaci se ravnomjerno podijele između četiri Workera.
